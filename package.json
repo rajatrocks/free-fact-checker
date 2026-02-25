@@ -1,0 +1,47 @@
+{
+    "name": "free-fact-checker",
+    "description": "Highlight text and fact-check it with Google Gemini",
+    "version": "1.0.3",
+    "scripts": {
+        "start": "xt-build -e dev -w",
+        "build": "xt-build -e prod",
+        "clean": "xt-clean",
+        "test": "xt-test"
+    },
+    "devDependencies": {
+        "extension-cli": "latest"
+    },
+    "dependencies": {
+        "@google/genai": "^1.42.0",
+        "showdown": "^2.1.0"
+    },
+    "xtbuild": {
+        "copyAsIs": [
+            "./src/images/**/*"
+        ],
+        "scss_bundles": [
+            {
+                "name": "css/shadow",
+                "src": "./src/css/shadow.css"
+            },
+            {
+                "name": "css/options",
+                "src": "./src/css/options.css"
+            }
+        ],
+        "js_bundles": [
+            {
+                "name": "scripts/content",
+                "src": "./src/scripts/content.js"
+            },
+            {
+                "name": "scripts/service-worker",
+                "src": "./src/scripts/service-worker.js"
+            },
+            {
+                "name": "scripts/options",
+                "src": "./src/scripts/options.js"
+            }
+        ]
+    }
+}

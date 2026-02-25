@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Free Fact Checker - Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/options.css">
+    <link rel="icon" type="image/png" href="images/icon-32.png">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="images/icon-128.png" alt="Free Fact Checker" class="logo">
+            <h1>Free Fact Checker</h1>
+            <p class="subtitle">Select any text on a web page or PDF and instantly fact-check it with Google Search and Gemini.</p>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="form-group">
+            <label for="apiKey">Google Gemini API Key</label>
+            <input type="password" id="apiKey" placeholder="Enter your Gemini API key" autocomplete="off">
+            <p class="help-text">
+                Get your free API key from <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.
+                <br>
+                <a href="https://quickstart.asksteve.to/get-gemini-key.html?src=ffc" target="_blank">Step-by-step instructions</a>
+            </p>
+        </div>
+
+        <button id="saveButton">Save &amp; Test</button>
+
+        <div class="settings-group">
+            <div class="form-group">
+                <label for="modelSelect">Model</label>
+                <select id="modelSelect"></select>
+            </div>
+
+            <div class="help-text">
+                Gemini 2.5 Flash and Gemini 2.5 Flash Lite can be used for free with a limit of 20 requests per day. To use any of the other models or get more requests per day you will need to setup billing in <a href="https://aistudio.google.com/apikey" target="_blank">AI Studio</a>. See your current rate limits <a href="https://aistudio.google.com/rate-limit" target="_blank">here</a>. 
+            </div>            
+
+        </div>
+
+        <div class="settings-group">
+            <div class="form-group">
+                <label for="promptTextarea">Fact-Check Prompt</label>
+                <textarea id="promptTextarea" rows="12" placeholder="Enter your custom prompt..."></textarea>
+                <p class="help-text">
+                    Edit this to customize your fact-check. Use <code>[[text]]</code> as a placeholder for the selected text. Changes are saved automatically.
+                </p>
+            </div>
+            <button type="button" id="resetPromptButton" class="button-secondary">Reset to Default</button>
+        </div>
+
+        <div class="instructions">
+            <h3>How to use</h3>
+            <ol>
+                <li>Select any text on a web page or PDF</li>
+                <li>Click the toolbar icon or right-click and choose "Fact Check This"</li>
+                <li>View the results with sources and citations</li>
+            </ol>
+        </div>
+
+        <div class="footer">
+            <p><a href="https://www.asksteve.to" target="_blank">An Ask Steve Project</a></p>
+        </div>
+    </div>
+    <script src="scripts/options.js"></script>
+</body>
+</html>

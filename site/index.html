@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Free Fact Checker - Fact check anything on the internet</title>
+    <meta name="description" content="A free Chrome extension that lets you highlight any text on a webpage and instantly fact-check it using Google Search and Gemini.">
+    <link rel="icon" type="image/png" href="images/icon-128.png">
+
+    <!-- OpenGraph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.freefactchecker.com/">
+    <meta property="og:title" content="Free Fact Checker - Fact check anything on the internet">
+    <meta property="og:description" content="A free Chrome extension that lets you highlight any text on a webpage and instantly fact-check it using Google Search and Gemini.">
+    <meta property="og:image" content="https://www.freefactchecker.com/images/ffc-opengraph.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="627">
+    <meta property="og:site_name" content="Free Fact Checker">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Free Fact Checker - Fact check anything on the internet">
+    <meta name="twitter:description" content="A free Chrome extension that lets you highlight any text on a webpage and instantly fact-check it using Google Search and Gemini.">
+    <meta name="twitter:image" content="https://www.freefactchecker.com/images/ffc-opengraph.png">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --blue: #1EAEDB;
+            --blue-dark: #0FA0CE;
+            --bg: #ffffff;
+            --bg-alt: #f8f9fa;
+            --text: #222;
+            --text-muted: #555;
+            --border: #e0e0e0;
+            --radius: 8px;
+            --max-w: 800px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text);
+            line-height: 1.6;
+            background: var(--bg);
+        }
+
+        a { color: var(--blue); text-decoration: none; }
+        a:hover { color: var(--blue-dark); text-decoration: underline; }
+
+        .container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+        /* HEADER */
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        header .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        header img { width: 32px; height: 32px; }
+        header h1 { font-size: 28px; font-weight: 700; }
+
+        /* HERO */
+        .hero {
+            text-align: center;
+            padding: 80px 0 60px;
+        }
+        .hero h2 {
+            font-size: 40px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 24px;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero p {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            max-width: 540px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .cta-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .btn:hover { text-decoration: none; transform: translateY(-1px); }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-primary:hover { background: var(--blue-dark); color: #fff; }
+        .btn-outline { border: 2px solid var(--border); color: var(--text); background: #fff; }
+        .btn-outline:hover { border-color: #bbb; color: var(--text); }
+
+        /* SECTIONS */
+        section { padding: 60px 0; }
+        section:nth-child(even) { background: var(--bg-alt); }
+        section h3 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        /* HOW IT WORKS */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 32px;
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .step {
+            text-align: center;
+            padding: 24px;
+        }
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--blue);
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .step h4 { font-size: 18px; margin-bottom: 8px; }
+        .step p { font-size: 15px; color: var(--text-muted); }
+
+        /* FEATURES */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            max-width: var(--max-w);
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .feature {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+        .feature h4 { font-size: 16px; margin-bottom: 8px; }
+        .feature p { font-size: 14px; color: var(--text-muted); }
+
+        /* SETUP */
+        .setup-steps {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .setup-step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            align-items: flex-start;
+        }
+        .setup-step .step-number {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+        }
+        .setup-step div { padding-top: 4px; }
+        .setup-step h4 { font-size: 16px; margin-bottom: 4px; }
+        .setup-step p { font-size: 14px; color: var(--text-muted); }
+
+        /* FAQ */
+        .faq {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        details {
+            border-bottom: 1px solid var(--border);
+        }
+        details:first-of-type {
+            border-top: 1px solid var(--border);
+        }
+        summary {
+            padding: 18px 0;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: "+";
+            font-size: 20px;
+            font-weight: 400;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+        details[open] summary::after {
+            content: "\2212";
+        }
+        details p {
+            padding: 0 0 18px;
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        footer p { margin-bottom: 8px; }
+
+        /* VIDEO */
+        .video-wrapper {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .video-embed {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .video-embed iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 600px) {
+            .hero { padding: 50px 0 40px; }
+            .hero h2 { font-size: 28px; }
+            .hero p { font-size: 16px; }
+            section h3 { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <img src="images/icon-128.png" alt="Free Fact Checker">
+        <h1>Free Fact Checker</h1>
+    </div>
+</header>
+
+<div class="hero">
+    <div class="container">
+        <h2>Fact Check while you read.</h2>
+        <p>The Free Fact Checker is a Chrome extension that enables you to select any text on a webpage and instantly fact-check it using Google Search and Gemini.</p>
+        <div class="cta-group">
+            <a href="https://chromewebstore.google.com/detail/ehfhjhljagpmgphmahlggfeohhcdeecf" class="btn btn-primary">Add to Chrome</a>
+            <a href="https://github.com/rajatrocks/free-fact-checker" class="btn btn-outline">View on GitHub</a>
+        </div>
+    </div>
+</div>
+
+<section style="padding-top: 20px; padding-bottom: 80px;">
+    <div class="video-wrapper">
+        <div class="video-embed">
+            <iframe src="https://www.youtube.com/embed/Ed7sOlvik0E?si=X5VfJImBIl6JdYtg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h3>How It Works</h3>
+    <div class="steps">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h4>Highlight Text</h4>
+            <p>Select some text on a web page, PDF or Google Docs and then use the right-click menu or press the toolbar icon to trigger a fact check.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <h4>Google Search Grounding</h4>
+            <p>Your text is sent to Google Gemini, which finds real data about it using Google Search through a process called grounding.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <h4>Get Cited Results</h4>
+            <p>You get a fact-check with citations and sources. You will never get an AI's opinion &mdash; only answers grounded in Google Search.</p>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h3>Features</h3>
+    <div class="features">
+        <div class="feature">
+            <h4>Works Everywhere</h4>
+            <p>Facebook, X, Instagram, Bluesky, Reddit, PDFs, Google Docs & Slides, news sites &mdash; any page where you can highlight text.</p>
+        </div>
+        <div class="feature">
+            <h4>Grounded in Search</h4>
+            <p>Results come from Google Search, not AI opinion. If no data can be found, it will tell you instead of making something up.</p>
+        </div>
+        <div class="feature">
+            <h4>100% Free</h4>
+            <p>The extension is free. Google lets you make 20 grounding requests per day with a free Gemini API Key.</p>
+        </div>
+        <div class="feature">
+            <h4>No Login Required</h4>
+            <p>The extension does not require you to log in. You can use it immediately after installing and adding your API key.</p>
+        </div>         
+        <div class="feature">
+            <h4>No Tracking</h4>
+            <p>Your queries go directly from your browser to Google's Gemini API using your own key. There is no tracking or analytics.</p>
+        </div>
+        <div class="feature">
+            <h4>Check Your Writing</h4>
+            <p>Highlight any text in your own writing and get instant fact-checks to ensure accuracy.</p>
+        </div>        
+    </div>
+</section>
+
+<section>
+    <h3>Get Started</h3>
+    <div class="setup-steps">
+        <div class="setup-step">
+            <div class="step-number">1</div>
+            <div>
+                <h4>Install the Extension</h4>
+                <p>Add the Free Fact Checker from the <a href="https://chromewebstore.google.com/detail/free-fact-checker/EXTENSION_ID">Chrome Web Store</a>. Works in Chrome, Edge, Brave, Vivaldi, Arc, and Opera. You can also download and install the source code from <a href="https://github.com/rajatrocks/free-fact-checker" target="_blank">GitHub</a>.</p>
+            </div>
+        </div>
+        <div class="setup-step">
+            <div class="step-number">2</div>
+            <div>
+                <h4>Get a Free Gemini API Key</h4>
+                <p>Get your free API key from <a href="https://aistudio.google.com/apikey">Google AI Studio</a>. It takes about a minute.</p>
+            </div>
+        </div>
+        <div class="setup-step">
+            <div class="step-number">3</div>
+            <div>
+                <h4>Add Your Key</h4>
+                <p>Open the extension settings and paste in your API key. It will be verified automatically.</p>
+            </div>
+        </div>
+        <div class="setup-step">
+            <div class="step-number">4</div>
+            <div>
+                <h4>Start Fact Checking</h4>
+                <p>Highlight any statement on a webpage and click the Fact Check button that appears. That's it!</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h3>FAQ</h3>
+    <div class="faq">
+        <details>
+            <summary>What sites does it work on?</summary>
+            <p>The Free Fact Checker works on any site where you can highlight text in a browser. Try it on Facebook, X (Twitter), YouTube, Instagram, Bluesky, Reddit, and major news sites.</p>
+        </details>
+        <details>
+            <summary>Why should I use this?</summary>
+            <p>It's hard to know what to believe online. Manually verifying everything is basically impossible. The Free Fact Checker makes that quicker and easier by grounding every check in Google Search results.</p>
+        </details>
+        <details>
+            <summary>Can I trust this?</summary>
+            <p>The Free Fact Checker uses Google Search to find information. To the degree that you trust Google Search, you can trust this. It will never give you an AI's opinion &mdash; only search-grounded answers. You should always look at the citations to see if they're trustworthy.</p>
+        </details>
+        <details>
+            <summary>Don't LLMs hallucinate?</summary>
+            <p>Yes they do. That's why the Free Fact Checker uses grounding &mdash; it gives the AI real information from Google Search to base its answer on. If Google Search can't find information about a claim, it will tell you that instead of making something up.</p>
+        </details>
+        <details>
+            <summary>Is it really free?</summary>
+            <p>Yes. The extension is free and you can get a free Gemini API Key from Google. Google lets you make 20 grounding requests per day on the free plan. If you want more requests per day or want to use a different Gemini model, you will need to set up billing in <a href="https://aistudio.google.com/apikey" target="_blank">AI Studio</a>.</p>
+        </details>
+        <details>
+            <summary>What is an API Key?</summary>
+            <p>An API Key is like a password that lets one piece of software talk to another. In this case, it lets the extension talk to Google's Gemini API on your behalf.</p>
+        </details>
+        <details>
+            <summary>Why do I need to put in my own API Key?</summary>
+            <p>If we ran your requests through our server, Google would charge us for every request. By using your own free API Key, everyone gets to use the Free Fact Checker for free without limits or subscriptions.</p>
+        </details>
+        <details>
+            <summary>Can I fact check a whole page?</summary>
+            <p>No. The Free Fact Checker requires you to select a specific statement or passage to fact check.</p>
+        </details>       
+        <details>
+            <summary>Is my usage being tracked?</summary>
+            <p>No. Your queries go directly from your browser to Google's API using your own key. There is no tracking, analytics, or telemetry of any kind.</p>
+        </details>
+        <details>
+            <summary>What browsers does it work in?</summary>
+            <p>The Free Fact Checker works in all Chromium-based browsers including Chrome, Edge, Brave, Vivaldi, Arc, and Opera.</p>
+        </details>
+        <details>
+            <summary>Does it work on my phone?</summary>
+            <p>No, it only works in desktop browsers. Mobile browsers don't support the extensions API needed for this to work.</p>
+        </details>
+        <details>
+            <summary>Does it work with PDFs?</summary>
+            <p>Yes. Select your text and then open the right-click menu and pick "Fact Check This".</p>
+        </details>     
+        <details>
+            <summary>Does it work with Google Docs & Google Slides?</summary>
+            <p>Yes. Select your text and then press the Free Fact Checker toolbar icon. You can pin the icon to your toolbar to make this faster.</p>
+        </details>             
+        <details>
+            <summary>Can I see the code?</summary>
+            <p>Yes, the source code is available on <a href="https://github.com/rajatrocks/free-fact-checker" target="_blank">GitHub</a> and you can download and install it yourself.</p>
+        </details>        
+        <details>
+            <summary>What countries does it work in?</summary>
+            <p>The Free Fact Checker works in any country where you can get a Gemini API Key. Free Gemini Keys are not available in all countries &mdash; check <a href="https://ai.google.dev/gemini-api/docs/available-regions" target="_blank">Google's availability page</a> for details.</p>
+        </details>
+        <details>
+            <summary>Who made this?</summary>
+            <p>The Free Fact Checker was originally created as an Agent in <a href="https://www.asksteve.to" target="_blank">Ask Steve</a>. We found it so useful that we decided to make it available as a standalone extension.</p>
+        </details>        
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <p><a href="/privacy.html">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="https://www.asksteve.to">An Ask Steve Project</a></p>
+    </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+    "manifest_version": 3,
+    "name": "Free Fact Checker - Use AI & Google Search to fact check any text for free",
+    "description": "Select text on any web page or PDF and fact-check it instantly using Google Gemini with Search grounding",
+    "version": "1.0.3",
+    "minimum_chrome_version": "88",
+    "permissions": [
+        "storage",
+        "contextMenus",
+        "activeTab",
+        "scripting"
+    ],
+    "action": {
+        "default_title": "Fact Check Selection",
+        "default_icon": {
+            "16": "images/icon-16.png",
+            "32": "images/icon-32.png",
+            "48": "images/icon-48.png",
+            "128": "images/icon-128.png"
+        }
+    },
+    "background": {
+        "service_worker": "scripts/service-worker.js"
+    },
+    "options_page": "options.html",
+    "icons": {
+        "16": "images/icon-16.png",
+        "32": "images/icon-32.png",
+        "48": "images/icon-48.png",
+        "128": "images/icon-128.png"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["css/shadow.css", "images/*", "options.html"],
+            "matches": ["http://*/*", "https://*/*"]
+        }
+    ],
+    "host_permissions": [
+        "https://generativelanguage.googleapis.com/*"
+    ],
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsEImdOoxmskHknfTQBIanKBLDVK/OapLNCTkilDGGA1bP72hAS9F5NCuz3Ye0JQU8peYRcRgAJtP/e0YYsnlIz3m7nWKVjuNmgmnvyddB8Yt0OSOLXGDzRItaWHJYIei4daQ+CXOi+k6gznz8Na0DjllDMfcreLF7ASz3r91iO7X4NUV49eGCe4d+APiLhfBi8+5PkEtRlnSIcxzYlp+Y9Dn2Pem8V8lr1s92uSo1VtDoWl5fH0CD/qSk6QykcVXXyVup09WF6V7Clxa7KJzYtCqNmWTqx+6CV+fXwU8eXbhPPEs7gq0t/EJG4yNAc3gswpqGMmeNK6JYD6YLn4h5wIDAQAB"    
+}
