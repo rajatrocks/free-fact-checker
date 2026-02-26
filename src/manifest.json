@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Free Fact Checker - Use AI & Google Search to fact check any text for free",
     "description": "Select text on any web page or PDF and fact-check it instantly using Google Gemini with Search grounding",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "minimum_chrome_version": "88",
     "permissions": [
         "storage",

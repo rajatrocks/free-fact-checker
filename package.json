@@ -1,7 +1,7 @@
 {
     "name": "free-fact-checker",
     "description": "Highlight text and fact-check it with Google Gemini",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "scripts": {
         "start": "xt-build -e dev -w",
         "build": "xt-build -e prod",
