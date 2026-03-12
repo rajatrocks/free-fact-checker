@@ -512,8 +512,21 @@ function showInfoMessage(html) {
     modalEl.style.display = "block";
 }
 
-function showNoSelectionMessage() {
-    showInfoMessage("<p style='text-align:center; color:#555; margin-top:20px;'>Highlight some text on the page, then click the toolbar icon or right-click and choose \"Fact Check This\" to fact-check it.</p>");
+async function showNoSelectionMessage() {
+    let shortcutText = '';
+    try {
+        const shortcut = await chrome.runtime.sendMessage({ type: MSG.GET_SHORTCUT });
+        if (shortcut) {
+            const isMac = /mac/i.test(navigator.platform);
+            const display = isMac
+                ? shortcut.replace('Alt', 'Option').replace('MacCtrl', 'Control').replace('Command', 'Cmd')
+                : shortcut;
+            shortcutText = `press <b>${display}</b>, `;
+        }
+    } catch (e) {
+        // service worker unavailable — omit shortcut from message
+    }
+    showInfoMessage(`<p style='text-align:center; color:#555; margin-top:20px;'>Highlight some text on the page, then ${shortcutText}click the toolbar icon, or right-click and choose "Fact Check This" to fact-check it.</p>`);
 }
 
 function showPDFMessage() {

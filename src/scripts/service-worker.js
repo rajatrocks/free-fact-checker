@@ -114,6 +114,29 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 // ******************************************************************
+// Keyboard shortcut (chrome.commands) -> fact-check selected text
+// ******************************************************************
+chrome.commands.onCommand.addListener(async (command, tab) => {
+    if (command === "fact-check-selection" && tab) {
+        try {
+            const isPDF = tab.url && (
+                tab.url.toLowerCase().endsWith(".pdf") ||
+                tab.url.startsWith(`chrome-extension://${CHROME_PDF_VIEWER_ID}`)
+            );
+            if (isPDF) {
+                await injectContentScript(tab.id);
+                await chrome.tabs.sendMessage(tab.id, { type: MSG.SHOW_PDF_MESSAGE });
+                return;
+            }
+            await injectContentScript(tab.id);
+            await chrome.tabs.sendMessage(tab.id, { type: MSG.FACT_CHECK_SELECTION });
+        } catch (e) {
+            chrome.runtime.openOptionsPage();
+        }
+    }
+});
+
+// ******************************************************************
 // Message listener
 // ******************************************************************
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -134,6 +157,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         case MSG.TEST_API_KEY:
             testApiKey(request.apiKey).then(sendResponse);
+            return true;
+
+        case MSG.GET_SHORTCUT:
+            chrome.commands.getAll().then(commands => {
+                const cmd = commands.find(c => c.name === 'fact-check-selection');
+                sendResponse(cmd && cmd.shortcut ? cmd.shortcut : '');
+            });
             return true;
 
     }

@@ -22,6 +22,41 @@ document.addEventListener('DOMContentLoaded', async function() {
     const resetPromptButton = document.getElementById('resetPromptButton');
     let promptSaveTimer = null;
 
+    // Keyboard shortcut display — query Chrome for the actual configured shortcut
+    const hotkeyDisplay = document.getElementById('hotkeyDisplay');
+    const hotkeyInstructions = document.getElementById('hotkeyInstructions');
+    const shortcutLink = document.getElementById('shortcutLink');
+
+    // Detect OS for display formatting
+    const platform = navigator.userAgentData
+        ? navigator.userAgentData.platform
+        : navigator.platform;
+    const isMac = /mac/i.test(platform);
+
+    function formatShortcut(shortcut) {
+        if (!shortcut) return 'Not set';
+        if (isMac) {
+            return shortcut.replace('Alt', 'Option').replace('MacCtrl', 'Control').replace('Command', 'Cmd');
+        }
+        return shortcut;
+    }
+
+    try {
+        const commands = await chrome.commands.getAll();
+        const cmd = commands.find(c => c.name === 'fact-check-selection');
+        const display = cmd && cmd.shortcut ? formatShortcut(cmd.shortcut) : 'Alt+F';
+        hotkeyDisplay.textContent = display;
+        hotkeyInstructions.textContent = display;
+    } catch (e) {
+        hotkeyDisplay.textContent = isMac ? 'Option+F' : 'Alt+F';
+        hotkeyInstructions.textContent = isMac ? 'Option+F' : 'Alt+F';
+    }
+
+    shortcutLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    });
+
     // Load existing settings
     const stored = await chrome.storage.local.get([STORAGE_KEY.API_KEY, STORAGE_KEY.MODEL, STORAGE_KEY.CUSTOM_PROMPT]);
     if (stored[STORAGE_KEY.API_KEY]) {

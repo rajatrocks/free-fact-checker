@@ -10,6 +10,7 @@ export const MSG = {
     CONVERT_MARKDOWN: "convertMarkdownToHTML",
     OPEN_OPTIONS: "openOptionsWithMessage",
     TEST_API_KEY: "testApiKey",
+    GET_SHORTCUT: "getShortcut",
 };
 
 // Port name for streaming connection

@@ -52,11 +52,21 @@
             <button type="button" id="resetPromptButton" class="button-secondary">Reset to Default</button>
         </div>
 
+        <div class="settings-group">
+            <div class="form-group">
+                <label>Keyboard Shortcut</label>
+                <p class="help-text">
+                    Default: <strong id="hotkeyDisplay"></strong><br>
+                    To change, visit <a href="#" id="shortcutLink">Chrome's keyboard shortcut settings</a>.
+                </p>
+            </div>
+        </div>
+
         <div class="instructions">
             <h3>How to use</h3>
             <ol>
                 <li>Select any text on a web page or PDF</li>
-                <li>Click the toolbar icon or right-click and choose "Fact Check This"</li>
+                <li>Press <strong id="hotkeyInstructions"></strong>, click the toolbar icon, or right-click and choose "Fact Check This"</li>
                 <li>View the results with sources and citations</li>
             </ol>
         </div>
