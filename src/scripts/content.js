@@ -4,6 +4,9 @@
 
 import { MSG, PORT_NAME, STORAGE_KEY, DEFAULT_PROMPT } from './constants.js';
 
+// Unique ID for this script instance — used to detect stale elements after extension updates
+const INSTANCE_ID = Math.random().toString(36).slice(2);
+
 // ==================== GLOBALS ====================
 
 let SHADOW_ROOT = null;
@@ -30,8 +33,21 @@ const STREAM_THROTTLE_MS = 80;
 // ==================== INITIALIZATION ====================
 
 (function init() {
-    // Guard against double-initialization (script may be injected multiple times)
-    if (document.querySelector('factchecker-ui')) return;
+    // Guard against double-initialization (script may be injected multiple times).
+    // After an extension update the old content script is dead but its DOM element
+    // remains. Each injection stamps the element with a unique INSTANCE_ID — if the
+    // element exists but has a different stamp, it's stale and must be replaced.
+    const existingHost = document.querySelector('factchecker-ui');
+    if (existingHost) {
+        if (existingHost.dataset.instanceId === INSTANCE_ID) return;
+        existingHost.remove();
+        SHADOW_ROOT = null;
+        modalEl = null;
+        modalTitleEl = null;
+        modalTextEl = null;
+        modalMessageEl = null;
+        resizeHandleEl = null;
+    }
 
     // Load saved settings
     chrome.storage.local.get([STORAGE_KEY.MODAL_WIDTH], function(result) {
@@ -306,6 +322,7 @@ function processGrounding(groundingMetadata, textData) {
 
 function setupShadowRoot() {
     const shadowHost = document.createElement("factchecker-ui");
+    shadowHost.dataset.instanceId = INSTANCE_ID;
     document.body.insertAdjacentElement("afterend", shadowHost);
 
     try {
