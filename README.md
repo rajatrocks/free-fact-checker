@@ -7,7 +7,7 @@ A free Chrome extension that lets you highlight any text on a webpage and instan
 
 ## How It Works
 
-1. **Highlight Text** — Select any statement on any webpage: news articles, social media, PDFs, anywhere you can highlight text. Then use the right-click menu or press the toolbar icon to trigger a fact check.
+1. **Highlight Text** — Select any statement on any webpage: news articles, social media, PDFs, anywhere you can highlight text. Then use the right-click menu, keyboard shortcut, or press the toolbar icon to trigger a fact check.
 2. **Google Search Grounding** — Your text is sent to Google Gemini, which finds real data about it using Google Search through a process called grounding.
 3. **Get Cited Results** — You get a fact-check with citations and sources. You will never get an AI's opinion — only answers grounded in Google Search.
 
