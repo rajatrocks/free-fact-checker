@@ -12,7 +12,7 @@
         "extension-cli": "latest"
     },
     "dependencies": {
-        "@google/genai": "^1.42.0",
+        "@google/genai": "^2.15.0",
         "showdown": "^2.1.0"
     },
     "xtbuild": {
