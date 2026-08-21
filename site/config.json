@@ -1,0 +1,35 @@
+{
+  "_comment": "Model + prompt configuration for the Free Fact Checker extension. Edit and deploy to change the models offered, the default model, and the fact-check prompt, without shipping a new extension build. Models must support grounding with Google Search. defaultPrompt must contain the [[text]] placeholder or it is rejected and the bundled prompt is used. thinkingConfig is passed straight to the Gemini SDK: an object sets it, null sends none at all, omitting the key infers it from the model id. Gemma accepts thinkingLevel MINIMAL or HIGH only - not LOW/MEDIUM, and no thinkingBudget; MINIMAL is essential, since Gemma's default thinking can run for minutes on a multi-claim check.",
+  "defaultModel": "gemma-4-26b-a4b-it",
+  "defaultPrompt": "I am reading some content online and I need to know whether I can trust it or not. Please evaluate it and tell me if the statement(s) are true or not.\n\nHere is the text that I'm reading:\n----------------------------------\n[[text]]\n----------------------------------\n\nAlways search the web to check the claim(s) before answering \u2014 even if you are confident you already know the answer \u2014 and cite the sources you used.\n\nYou can use Markdown and HTML in your answer.\n\nAt the very bottom of your response, put one of the following verdicts (copy exactly as shown):\n\nIf the statement is true:\n<div class=\"verdict verdict-true\">TRUE</div>\n\nIf the statement is false:\n<div class=\"verdict verdict-false\">FALSE</div>\n\nIf the statement is not totally true or false:\n<div class=\"verdict verdict-mixed\">MIXED</div>\n\nIf you don't know, then don't put anything at the bottom.",
+  "models": [
+    {
+      "id": "gemma-4-26b-a4b-it",
+      "name": "Gemma 4 26B  (Free)",
+      "thinkingConfig": {
+        "thinkingLevel": "MINIMAL"
+      }
+    },
+    {
+      "id": "gemini-flash-latest",
+      "name": "Gemini Flash Latest  ($)",
+      "thinkingConfig": {
+        "thinkingLevel": "low"
+      }
+    },
+    {
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash Lite Latest  ($)",
+      "thinkingConfig": {
+        "thinkingLevel": "low"
+      }
+    },
+    {
+      "id": "gemini-pro-latest",
+      "name": "Gemini Pro Latest  ($)",
+      "thinkingConfig": {
+        "thinkingLevel": "low"
+      }
+    }
+  ]
+}

@@ -2,7 +2,8 @@
 // Free Fact Checker - Content Script
 // ******************************************************************
 
-import { MSG, PORT_NAME, STORAGE_KEY, DEFAULT_PROMPT } from './constants.js';
+import { MSG, PORT_NAME, STORAGE_KEY } from './constants.js';
+import { getCachedConfig } from './config.js';
 
 // Unique ID for this script instance — used to detect stale elements after extension updates
 const INSTANCE_ID = Math.random().toString(36).slice(2);
@@ -151,8 +152,8 @@ async function runFactCheck(selectedText) {
         return;
     }
 
-    // Build the prompt (use custom prompt if set, otherwise default)
-    const template = result[STORAGE_KEY.CUSTOM_PROMPT] || DEFAULT_PROMPT;
+    // Build the prompt (use custom prompt if set, otherwise the configured default)
+    const template = result[STORAGE_KEY.CUSTOM_PROMPT] || (await getCachedConfig()).defaultPrompt;
     const prompt = template.replace("[[text]]", selectedText);
 
     // Save for rerun

@@ -1,6 +1,7 @@
 import { Converter } from 'showdown';
 import { GoogleGenAI } from '@google/genai';
-import { MSG, PORT_NAME, STORAGE_KEY, CHROME_PDF_VIEWER_ID, DEFAULT_MODEL } from './constants.js';
+import { MSG, PORT_NAME, STORAGE_KEY, CHROME_PDF_VIEWER_ID } from './constants.js';
+import { getActiveModel, refreshConfig } from './config.js';
 
 // ******************************************************************
 // Showdown markdown converter
@@ -28,10 +29,42 @@ const converter = new Converter({
 // ******************************************************************
 // Gemini model configuration
 // ******************************************************************
-// Model is now read from storage; this helper fetches it.
-async function getModel() {
-    const stored = await chrome.storage.local.get(STORAGE_KEY.MODEL);
-    return stored[STORAGE_KEY.MODEL] || DEFAULT_MODEL;
+// The model list and default come from the remote config (see config.js);
+// the user's choice among them comes from storage.
+
+// Minimize thinking for the given model, or return null to send no thinking
+// config at all. https://ai.google.dev/gemini-api/docs/thinking
+// The remote config can state this per model; the rules below are the
+// fallback for entries that don't.
+function thinkingConfigFor(model) {
+    if (model.thinkingConfig) return model.thinkingConfig;
+    // Explicit null means "send nothing" — Gemma models reject both
+    // thinkingBudget and thinkingLevel with a 400.
+    if (model.thinkingConfig === null) return null;
+    if (model.id.startsWith('gemini-3')) {
+        // Gemini 3.x uses thinkingLevel; can't disable, "low" is minimum
+        return { thinkingLevel: "low" };
+    }
+    if (model.id.includes('-pro')) {
+        // Gemini 2.5 Pro: minimum is 128
+        return { thinkingBudget: 128 };
+    }
+    // Flash/Lite: disable thinking entirely
+    return { thinkingBudget: 0 };
+}
+
+// The request config used for a fact check. Shared with the API key test so
+// that saving a key exercises the same request the extension actually makes —
+// grounding included, since that is where quota limits bite.
+function buildRequestConfig(model) {
+    const config = {
+        temperature: 0,
+        safetySettings: SAFETY_SETTINGS,
+        tools: [{ googleSearch: {} }]
+    };
+    const thinking = thinkingConfigFor(model);
+    if (thinking) config.thinkingConfig = thinking;
+    return config;
 }
 
 const SAFETY_SETTINGS = [
@@ -45,6 +78,9 @@ const SAFETY_SETTINGS = [
 // On install: open options page if no API key is saved
 // ******************************************************************
 chrome.runtime.onInstalled.addListener(async (details) => {
+    // Pick up any model changes published since this build shipped
+    refreshConfig();
+
     if (details.reason === "install") {
         const stored = await chrome.storage.local.get(STORAGE_KEY.API_KEY);
         if (!stored[STORAGE_KEY.API_KEY]) {
@@ -61,6 +97,13 @@ chrome.runtime.onInstalled.addListener(async (details) => {
             contexts: ["selection"]
         });
     });
+});
+
+// ******************************************************************
+// On browser startup: refresh the remote model configuration
+// ******************************************************************
+chrome.runtime.onStartup.addListener(() => {
+    refreshConfig();
 });
 
 // ******************************************************************
@@ -156,7 +199,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case MSG.TEST_API_KEY:
-            testApiKey(request.apiKey).then(sendResponse);
+            testApiKey(request.apiKey)
+                .then(sendResponse)
+                .catch(e => sendResponse({ success: false, error: cleanMessage(String(e && e.message || e)) }));
             return true;
 
         case MSG.GET_SHORTCUT:
@@ -173,20 +218,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Test API key (used by options page)
 // ******************************************************************
 async function testApiKey(apiKey) {
+    // Declared out here so the catch below can name the model in its error
+    let modelName = null;
+
     try {
         const ai = new GoogleGenAI({ apiKey });
-        const model = await getModel();
+        const model = await getActiveModel();
+        modelName = model.name;
+        // Same request shape as a real fact check, just capped short. The API
+        // validates the tools and thinking config before generating, so a model
+        // that can't ground (or has no grounding quota) fails here rather than
+        // silently at the user's first fact check.
         await ai.models.generateContent({
-            model,
+            model: model.id,
             contents: 'Say "hello"',
-            config: {
-                maxOutputTokens: 10,
-                temperature: 0
-            }
+            config: { ...buildRequestConfig(model), maxOutputTokens: 10 }
         });
         return { success: true };
     } catch (e) {
-        return { success: false, error: e.message || "Invalid API key" };
+        return { success: false, error: formatGeminiError(e, modelName) };
     }
 }
 
@@ -213,29 +263,16 @@ chrome.runtime.onConnect.addListener(function (port) {
         if (msg.type !== "start") return;
 
         let runningText = "";
+        // Declared out here so the catch below can name the model in its error
+        let modelName = null;
 
         try {
             const ai = new GoogleGenAI({ apiKey: msg.apiKey });
-            const model = await getModel();
-            const config = {
-                temperature: 0,
-                safetySettings: SAFETY_SETTINGS,
-                tools: [{ googleSearch: {} }]
-            };
-            // Minimize thinking for each model family
-            // https://ai.google.dev/gemini-api/docs/thinking
-            if (model.startsWith('gemini-3')) {
-                // Gemini 3.x uses thinkingLevel; can't disable, "low" is minimum
-                config.thinkingConfig = { thinkingLevel: "low" };
-            } else if (model.includes('-pro')) {
-                // Gemini 2.5 Pro: minimum is 128
-                config.thinkingConfig = { thinkingBudget: 128 };
-            } else {
-                // Flash/Lite: disable thinking entirely
-                config.thinkingConfig = { thinkingBudget: 0 };
-            }
+            const model = await getActiveModel();
+            modelName = model.name;
+            const config = buildRequestConfig(model);
             const response = await ai.models.generateContentStream({
-                model,
+                model: model.id,
                 contents: msg.prompt,
                 config
             });
@@ -265,7 +302,7 @@ chrome.runtime.onConnect.addListener(function (port) {
             });
 
         } catch (error) {
-            safePostMessage(port, { type: "error", error: formatGeminiError(error) });
+            safePostMessage(port, { type: "error", error: formatGeminiError(error, modelName) });
         }
     });
 });
@@ -277,7 +314,30 @@ function cleanMessage(str) {
     return str.replace(/\\n/g, ' ').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function formatGeminiError(error) {
+// Rewrite the errors users actually hit into something they can act on.
+// Returns null when we have nothing better to say than the raw message.
+function friendlyMessage(code, msg, modelName) {
+    const model = modelName ? `"${modelName}"` : 'this model';
+    if (code === 429) {
+        // Free-tier keys have little or no grounded-search quota. This also
+        // covers a paid key that has genuinely run out for the day.
+        return `Out of quota for ${model}. Models marked ($) need a paid API key — `
+            + `choose a model marked (Free), or add billing to your Google account. `
+            + `If you are already on a paid key, you may have reached today's limit.`;
+    }
+    if (code === 400 && /API[_ ]?key not valid|API key expired/i.test(msg)) {
+        return 'That API key is not valid. Copy it again from Google AI Studio.';
+    }
+    if (code === 403) {
+        return `This API key is not permitted to use ${model}. Check that the key is enabled for the Gemini API.`;
+    }
+    if (code === 404) {
+        return `${model} is not available to this API key. Pick a different model.`;
+    }
+    return null;
+}
+
+function formatGeminiError(error, modelName) {
     try {
         // The SDK error message is often a nested JSON string
         const parsed = JSON.parse(error.message);
@@ -297,9 +357,14 @@ function formatGeminiError(error) {
         msg = cleanMessage(msg);
 
         const code = inner.code || parsed.code || '';
+        const friendly = friendlyMessage(code, msg, modelName);
+        if (friendly) return friendly;
         return code ? `Error ${code}: ${msg}` : msg;
     } catch(e) {
-        // Not JSON — just clean up the raw message
-        return cleanMessage(error.message);
+        // Not JSON — the SDK sometimes throws a plain Error whose message still
+        // carries the status code, so try to recover one before giving up.
+        const raw = cleanMessage(error.message || String(error));
+        const code = Number((raw.match(/\b(429|403|404|400)\b/) || [])[1]) || 0;
+        return friendlyMessage(code, raw, modelName) || raw;
     }
 }

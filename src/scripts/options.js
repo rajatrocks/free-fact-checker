@@ -2,20 +2,35 @@
 // Free Fact Checker - Options / Settings Page
 // ******************************************************************
 
-import { MSG, STORAGE_KEY, GEMINI_MODELS, DEFAULT_MODEL, DEFAULT_PROMPT } from './constants.js';
+import { MSG, STORAGE_KEY } from './constants.js';
+import { getConfig, refreshConfig, resolveModel } from './config.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
     const apiKeyInput = document.getElementById('apiKey');
     const saveButton = document.getElementById('saveButton');
     const statusDiv = document.getElementById('status');
     const modelSelect = document.getElementById('modelSelect');
-    // Populate model dropdown
-    GEMINI_MODELS.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.id;
-        option.textContent = model.name;
-        modelSelect.appendChild(option);
-    });
+
+    // Populate the model dropdown from a config (remote, cached, or bundled).
+    // Called again if a background refresh brings back a different list.
+    function renderModels(config, savedId) {
+        modelSelect.innerHTML = '';
+        config.models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.id;
+            option.textContent = model.name;
+            modelSelect.appendChild(option);
+        });
+
+        const resolved = resolveModel(config, savedId).id;
+        modelSelect.value = resolved;
+
+        // The saved model is no longer offered — persist the fallback so the
+        // dropdown and storage agree.
+        if (savedId && savedId !== resolved) {
+            chrome.storage.local.set({ [STORAGE_KEY.MODEL]: resolved });
+        }
+    }
 
     // Prompt editor
     const promptTextarea = document.getElementById('promptTextarea');
@@ -62,15 +77,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (stored[STORAGE_KEY.API_KEY]) {
         apiKeyInput.value = stored[STORAGE_KEY.API_KEY];
     }
-    modelSelect.value = stored[STORAGE_KEY.MODEL] || DEFAULT_MODEL;
-    promptTextarea.value = stored[STORAGE_KEY.CUSTOM_PROMPT] || DEFAULT_PROMPT;
+    const config = await getConfig();
+    // The default prompt comes from the config too, so its wording can be tuned
+    // remotely. Tracked in a variable because a background refresh can change it.
+    let activeDefaultPrompt = config.defaultPrompt;
+
+    renderModels(config, stored[STORAGE_KEY.MODEL]);
+    promptTextarea.value = stored[STORAGE_KEY.CUSTOM_PROMPT] || activeDefaultPrompt;
+
+    // Re-check the remote config behind the rendered page so the settings page
+    // always ends up showing the current model list and prompt.
+    refreshConfig().then(fresh => {
+        renderModels(fresh, modelSelect.value);
+        // Only replace the textarea if it is still showing the old default —
+        // never clobber a prompt the user has customised.
+        const showingDefault = promptTextarea.value === activeDefaultPrompt;
+        activeDefaultPrompt = fresh.defaultPrompt;
+        if (showingDefault) promptTextarea.value = activeDefaultPrompt;
+    });
 
     // Auto-save prompt on edit (debounced)
     promptTextarea.addEventListener('input', function() {
         clearTimeout(promptSaveTimer);
         promptSaveTimer = setTimeout(function() {
             const value = promptTextarea.value;
-            if (value === DEFAULT_PROMPT || value.trim() === '') {
+            if (value === activeDefaultPrompt || value.trim() === '') {
                 chrome.storage.local.remove(STORAGE_KEY.CUSTOM_PROMPT);
             } else {
                 chrome.storage.local.set({ [STORAGE_KEY.CUSTOM_PROMPT]: value });
@@ -80,13 +111,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Reset prompt to default
     resetPromptButton.addEventListener('click', function() {
-        promptTextarea.value = DEFAULT_PROMPT;
+        promptTextarea.value = activeDefaultPrompt;
         chrome.storage.local.remove(STORAGE_KEY.CUSTOM_PROMPT);
     });
 
-    // Save model selection immediately on change
-    modelSelect.addEventListener('change', function() {
-        chrome.storage.local.set({ [STORAGE_KEY.MODEL]: modelSelect.value });
+    // Save model selection immediately on change, then re-test the saved key
+    // against it so the user knows right away whether the new model works.
+    modelSelect.addEventListener('change', async function() {
+        await chrome.storage.local.set({ [STORAGE_KEY.MODEL]: modelSelect.value });
+
+        const key = apiKeyInput.value.trim();
+        if (!key) return;   // nothing to test with yet
+
+        const label = modelSelect.options[modelSelect.selectedIndex].textContent.trim();
+        await verifyKey(key, `Testing ${label}...`, `${label} works with your API key.`);
     });
 
     // Check for message parameter (redirected from content script)
@@ -96,22 +134,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Save and test
-    saveButton.addEventListener('click', async function() {
-        const key = apiKeyInput.value.trim();
-        if (!key) {
-            showStatus('Please enter an API key.', 'error');
-            return;
-        }
+    // Rapid model switching can leave slower replies in flight; only the newest
+    // test is allowed to write to the status line.
+    let testSeq = 0;
 
-        showStatus('Testing API key...', 'info');
+    // Test the key against the currently selected model, and save it if it works.
+    // The service worker reads the model from storage, so the caller must have
+    // persisted the selection before calling this.
+    async function verifyKey(key, testingMessage, successMessage) {
+        const seq = ++testSeq;
+        showStatus(testingMessage, 'info');
         saveButton.disabled = true;
+        modelSelect.disabled = true;
 
         try {
             const result = await chrome.runtime.sendMessage({ type: MSG.TEST_API_KEY, apiKey: key });
+            if (seq !== testSeq) return;   // superseded by a newer test
 
             if (result && result.success) {
                 await chrome.storage.local.set({ [STORAGE_KEY.API_KEY]: key });
-                showStatus('API key saved and verified! You can now close this tab and start fact-checking.', 'success');
+                showStatus(successMessage, 'success');
             } else {
                 const errorMessage = (result && result.error) || 'Invalid API key';
                 // Avoid "Error: Error 400:..." double-prefix — SDK errors already include "Error"
@@ -119,10 +161,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showStatus(prefix + errorMessage, 'error');
             }
         } catch (e) {
-            showStatus('Error testing key: ' + e.message, 'error');
+            if (seq === testSeq) showStatus('Error testing key: ' + e.message, 'error');
         } finally {
-            saveButton.disabled = false;
+            if (seq === testSeq) {
+                saveButton.disabled = false;
+                modelSelect.disabled = false;
+            }
         }
+    }
+
+    saveButton.addEventListener('click', async function() {
+        const key = apiKeyInput.value.trim();
+        if (!key) {
+            showStatus('Please enter an API key.', 'error');
+            return;
+        }
+        await verifyKey(key, 'Testing API key...',
+            'API key saved and verified! You can now close this tab and start fact-checking.');
     });
 
     // Allow Enter key to save
